@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件转base64</title>
+    <meta name="keywords" content="文件转base64">
+    <meta name="description" content="文件转base64">
+</head>
+<body>
+    <div>
+        <input type="file">
+    </div>
+    <textarea></textarea>
+    <script>
+        var inputFile = document.querySelector('input');
+        var textarea = document.querySelector('textarea');
+        inputFile.onchange = function(e) {
+            var fr = new FileReader();
+            fr.readAsDataURL(e.target.files[0]);
+            fr.addEventListener('load',function(e2) {
+                textarea.value = e2.target.result;
+            });
+            fr.readAsText(e.target.files[0]);
+            fr.addEventListener('load',function(e2) {
+                textareaText.value = e2.target.result;
+            })
+        }
+    </script>
+</body>
+</html>
