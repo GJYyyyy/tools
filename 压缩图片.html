@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <input type="file" multiple/>
+    <button>一键下载</button>
+    <p>压缩率: </p>
+    <script>
+        var aList = [];
+        var compresstionRatio = .01;
+        var compresstionFileMimiType = 'image/webp';
+        var compresstionFileType = 'webp';
+        var btn = document.querySelector('button');
+        var ratioP = document.querySelector('p');
+
+        /
+        function getActualCompressedSize(filename, prevFile, nextBase64) {
+            var p = document.createElement('p');
+            p.innerText = 100 - (
+                atob(nextBase64.split(',')[1]).length / prevFile.size * 100
+            ).toFixed(2) + '%; ' + filename;
+            ratioP.append(p);
+        }
+
+        function getAList(file) {
+            return new Promise(resolve => {
+                var fr = new FileReader();
+                fr.readAsDataURL(file);
+                fr.addEventListener('load', function() {
+                    var img = new Image();
+                    img.src = this.result;
+                    img.addEventListener('load', function() {
+                        var canvas = document.createElement('canvas');
+                        canvas.width = this.width;
+                        canvas.height = this.height;
+                        var canvasCtx = canvas.getContext('2d');
+                        canvasCtx.drawImage(this, 0, 0, this.width, this.height);
+                        var compressImgBase64 = canvas.toDataURL(compresstionFileMimiType, compresstionRatio);
+                        getActualCompressedSize(file.name, file, compressImgBase64);
+                        var a = document.createElement('a');
+                        a.download = file.name.replace(/\.\w{1,10}$/, '.' + compresstionFileType);
+                        a.href = compressImgBase64;
+                        aList.push(a);
+                        resolve();
+                    })
+                })
+            })
+        }
+
+        document.querySelector('input').addEventListener('change', function(e) {
+            var files = e.currentTarget.files;
+            if(!FileReader) return;
+            var fileArr = Array.from(files);
+            var arr = fileArr.map(v => getAList(v))
+            btn.disabled = true;
+            ratioP.innerText = '压缩率: ';
+            aList = [];
+            Promise.all(arr).then(res => {
+                btn.disabled = false
+            })
+        })
+
+        btn.addEventListener('click', function() {
+            if(0 === aList.length) return;
+            var i = 0;
+            var len = aList.length;
+            for(; i < len; i++) {
+                aList[i].dispatchEvent(new MouseEvent('click'))
+            }
+        })
+    </script>
+</body>
+</html>
