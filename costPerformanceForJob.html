@@ -9,6 +9,7 @@
         * {
             box-sizing: border-box;
         }
+
         body {
             background-color: darkgrey;
         }
@@ -19,34 +20,51 @@
             align-items: center;
         }
 
-        #panel > div {
+        #panel>div {
             margin: 10px;
         }
 
-        #panel > div > label {
+        #panel>div>label {
             margin-right: 4px;
         }
-        #panel > div > input[type=number] {
-            width: 80px;
+
+        #panel>div>label>.question {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border: 1px solid black;
+            border-radius: 50%;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        #panel>div>input[type=number] {
+            width: 62px;
             height: 30px;
             padding: 4px;
         }
-        #panel > div > input#monthSalary {
-            width: 144px;
+
+        #panel>div>input#monthSalary {
+            width: 146px;
         }
-        #panel > div > input#eightOClock {
-            margin-left: 106px;
+
+        #panel>div>input#eightOClock {
+            margin-left: 60px;
         }
-        #panel > div > select {
+
+        #panel>div>select {
             width: 180px;
             height: 30px;
             padding: 4px;
         }
-        #panel > div > select#education {
+
+        #panel>div>select#education {
             width: 148px;
         }
 
-        #panel > div > button#submit {
+        #panel>div>button#submit {
             width: 90px;
             height: 30px;
             font-weight: bold;
@@ -58,11 +76,18 @@
     <div id="panel">
         <h1 class="full-center">工作性价比计算器</h1>
         <hr>
-        <div class="full-center"><label for="monthSalary">月工资（元）</label><input type="number" id="monthSalary" value="8000" min="0"></div>
-        <div class="full-center"><label for="dayWorkingHours">每日工作时间（小时）</label><input type="number" id="dayWorkingHours" value="9" min="0" max="24"></div>
-        <div class="full-center"><label for="dayCommutingHours">每日通勤时间（小时）</label><input type="number" id="dayCommutingHours" value="1" min="0" max="24">
+        <div class="full-center"><label for="monthSalary">月工资（元）</label><input type="number" id="monthSalary"
+                value="8000" min="0"></div>
+        <div class="full-center"><label for="dayWorkingHours">每日工作时间（小时）<span class="question"
+                    data-type="dayWorkingHours">?</span></label><input type="number" id="dayWorkingHours" value="9"
+                min="0" max="24"></div>
+        <div class="full-center"><label for="dayCommutingHours">每日通勤时间（小时）<span class="question"
+                    data-type="dayCommutingHours">?</span></label><input type="number" id="dayCommutingHours" value="1"
+                min="0" max="24">
         </div>
-        <div class="full-center"><label for="dayLazinessHours">每日摸鱼时间（小时）</label><input type="number" id="dayLazinessHours" value="5" min="0" max="24"></div>
+        <div class="full-center"><label for="dayLazinessHours">每日摸鱼时间（小时）<span class="question"
+                    data-type="dayLazinessHours">?</span></label><input type="number" id="dayLazinessHours" value="5"
+                min="0" max="24"></div>
         <div class="full-center">
             <label for="education">工作需求学历</label>
             <select id="education">
@@ -100,16 +125,25 @@
                 <option value="1.05">周围优秀同事较多</option>
             </select>
         </div>
-        <div class="full-center"><label for="eightOClock">是否早上8点上班</label><input type="checkbox" id="eightOClock"></div>
+        <div class="full-center"><label for="eightOClock">是否早上8点及以前上班</label><input type="checkbox" id="eightOClock">
+        </div>
         <div class="full-center"><button id="submit">计算！</button></div>
         <div class="full-center"><b>您的工作性价比为：<u id="result"></u></b></div>
         <hr>
         <div class="full-center">
             <table>
-                <tr><th>性价比参考</th></tr>
-                <tr><td>低于<b><u>0.8</u></b>：很惨</td></tr>
-                <tr><td>高于<b><u>1.5</u></b>：很爽</td></tr>
-                <tr><td>高于<b><u>2</u></b>：爽爆炸</td></tr>
+                <tr>
+                    <th>性价比参考</th>
+                </tr>
+                <tr>
+                    <td>低于<b><u>0.8</u></b>：很惨</td>
+                </tr>
+                <tr>
+                    <td>高于<b><u>1.5</u></b>：很爽</td>
+                </tr>
+                <tr>
+                    <td>高于<b><u>2</u></b>：爽爆炸</td>
+                </tr>
             </table>
         </div>
     </div>
@@ -145,7 +179,13 @@
 
             let isEightOClock = $eightOClock.checked;
 
-            let result = daySalary * (1 * workEnvironment * oppsiteSex * colleague) / (35 * (dayWorkingHours + dayCommutingHours - 0.5 * dayLazinessHours) * education) * (isEightOClock ? 0.95 : 1);
+            // 核心计算公式
+            let result =
+                daySalary * (1 * workEnvironment * oppsiteSex * colleague)
+                /
+                (35 * (dayWorkingHours + dayCommutingHours - 0.5 * dayLazinessHours) * education)
+                * (isEightOClock ? 0.95 : 1);
+
             result = result.toFixed(2);
 
             return result;
@@ -154,6 +194,22 @@
         $submit.onclick = () => {
             $result.innerText = calcResult();
         }
+
+        Array.from(document.querySelectorAll('.question')).map($question => {
+            $question.onclick = ev => {
+                switch (ev.target.dataset.type) {
+                    case 'dayWorkingHours':
+                        alert('每日工作时间 = 下班时间 - 上班时间');
+                        break;
+                    case 'dayCommutingHours':
+                        alert('每日通勤时间 = 从家到公司的时间 + 从公司到家的时间');
+                        break;
+                    case 'dayLazinessHours':
+                        alert('每日摸鱼时间 = 不干活时间 + 吃饭时间 + 午休时间');
+                        break;
+                }
+            }
+        })
 
     </script>
 </body>
