@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .top {
+            width: 100%;
+            text-align: center;
+        }
+
+        .bottom {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #canvas1,
+        #canvas2,
+        #canvas3 {
+            width: 90%;
+            height: 400px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="top">
+            <h3>武器基本信息</h3>
+            <div><label for="baseDamage">基本伤害：</label><input type="number" id="baseDamage" value="100" min="0"></div>
+            <div><label for="critical">暴击几率(%)：</label><input type="number" id="critical" value="25" min="0"></div>
+            <div><label for="criticalRatio">暴击倍率(%)：</label><input type="number" id="criticalRatio" value="200" min="0">
+            </div>
+            <div><label for="multishot">多重射击：</label><input type="number" id="multishot" value="1" min="1"></div>
+            <div><label for="fireRate">射速(s<sup>-1</sup>)：</label><input type="number" id="fireRate" value="10" min="1">
+            </div>
+        </div>
+        <hr />
+        <div class="bottom">
+            <h3>加成收益</h3>
+            <div id="canvas1"></div>
+            <div id="canvas2"></div>
+            <div id="canvas3"></div>
+        </div>
+    </div>
+
+    <!-- <script src="./echarts.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/4.1.0/echarts.min.js" integrity="sha512-zFamwbwg+DGEoYuDPofuZ8AWVEg3kV/kH9mDXIlMDdXwJ3UPR1KRyGQm19cMrg5YNU6CIrHJxjlqpWUaHmtOBA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        const $ = (id) => document.getElementById(id);
+    </script>
+    <script>
+        $baseDamage = $('baseDamage');
+        $critical = $('critical');
+        $criticalRatio = $('criticalRatio');
+        $multishot = $('multishot');
+        $fireRate = $('fireRate');
+
+        $canvas1 = $('canvas1');
+        $canvas2 = $('canvas2');
+        $canvas3 = $('canvas3');
+
+        const MaxRevenue = 300; // 最高收益，单位%
+        const TickGap = 10; // 收益间隔，单位%
+        const Ticks = MaxRevenue / TickGap; // 刻度数量
+
+        function calcDamage(params = {}) {
+            params = Object.assign(
+                {},
+                {
+                    baseDamageAppend: 0,
+                    criticalAppend: 0,
+                    criticalRatioAppend: 0,
+                    multishotAppend: 0,
+                    fireRateAppend: 0
+                },
+                params
+            );
+            // 期望基础伤害
+            let expectedBaseDamage = $baseDamage.value * (1 + params.baseDamageAppend / 100);
+            // 期望暴击几率
+            let expectedCritical = $critical.value * (1 + params.criticalAppend / 100) / 100;
+            // 期望暴击倍率
+            let expectedCriticalRatio = $criticalRatio.value * (1 + params.criticalRatioAppend / 100) / 100;
+            // 期望多重射击
+            let expectedMultishot = $multishot.value * (1 + params.multishotAppend / 100);
+            // 期望射速
+            let expectedFireRate = $fireRate.value * (1 + params.fireRateAppend / 100);
+
+            // 暴击伤害
+            let criticalDamage;
+            if (expectedCritical < 1) {
+                criticalDamage = (expectedBaseDamage * (1 - expectedCritical) + expectedBaseDamage * expectedCritical * expectedCriticalRatio);
+            } else {
+                criticalDamage = (expectedBaseDamage * expectedCritical * expectedCriticalRatio);
+            }
+
+            // 最终伤害
+            let expectedDamage = criticalDamage * expectedMultishot * expectedFireRate;
+
+            return expectedDamage.toFixed(2);
+        }
+
+        function drawCanvas1() {
+
+            let xAxisData = [];
+            for (let i = 0; i <= Ticks; i++) {
+                xAxisData.push(`${TickGap * i}%`);
+            }
+
+            let baseDamageAppend = [];
+            let criticalAppend = [];
+            let criticalRatioAppend = [];
+            let multishotAppend = [];
+            let fireRateAppend = [];
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend.push(calcDamage({ baseDamageAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalAppend.push(calcDamage({ criticalAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalRatioAppend.push(calcDamage({ criticalRatioAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                multishotAppend.push(calcDamage({ multishotAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                fireRateAppend.push(calcDamage({ fireRateAppend: TickGap * i }));
+            }
+
+            let chartsInstance = echarts.init($canvas1);
+            let option = {
+                title: {
+                    text: '单加成',
+                },
+                legend: {
+                    data: [
+                        { name: "基本伤害" },
+                        { name: "暴击几率" },
+                        { name: "暴击倍率" },
+                        { name: "多重射击" },
+                        { name: "射速" },
+                    ],
+                },
+                tooltip: {
+                    show: true, // 提示框展示开关，一个跟随鼠标展示数据详细信息的框
+                },
+                xAxis: {
+                    data: xAxisData,
+                    name: '加成率',
+                    nameLocation: 'end',
+                    axisPointer: {
+                        show: true, // 坐标轴指示器，跟随鼠标移动的分割线
+                        type: "shadow", // 指示器类型，line,shadow
+                    },
+                },
+                yAxis: {
+                    type: "value",
+                    name: '期望伤害',
+                    nameLocation: 'end',
+                    axisPointer: {
+                        show: true, // 坐标轴指示器，跟随鼠标移动的分割线
+                        type: "line", // 指示器类型，line,shadow
+                    },
+                },
+                series: [
+                    {
+                        name: "基本伤害", // 配合legend
+                        data: baseDamageAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击几率", // 配合legend
+                        data: criticalAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击倍率", // 配合legend
+                        data: criticalRatioAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "多重射击", // 配合legend
+                        data: multishotAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "射速", // 配合legend
+                        data: fireRateAppend,
+                        type: "line",
+                    },
+                ],
+            };
+            chartsInstance.setOption(option);
+        }
+
+        function drawCanvas2() {
+
+            let xAxisData = [];
+            for (let i = 0; i <= Ticks; i++) {
+                xAxisData.push(`${TickGap * i}%`);
+            }
+
+            let baseDamageAppend_criticalAppend = [];
+            let baseDamageAppend_criticalRatioAppend = [];
+            let baseDamageAppend_multishotAppend = [];
+            let baseDamageAppend_fireRateAppend = [];
+            let criticalAppend_criticalRatioAppend = [];
+            let criticalAppend_multishotAppend = [];
+            let criticalAppend_fireRateAppend = [];
+            let criticalRatioAppend_multishotAppend = [];
+            let criticalRatioAppend_fireRateAppend = [];
+            let multishotAppend_fireRateAppend = [];
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_criticalAppend.push(calcDamage({ baseDamageAppend: TickGap * i, criticalAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_criticalRatioAppend.push(calcDamage({ baseDamageAppend: TickGap * i, criticalRatioAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_multishotAppend.push(calcDamage({ baseDamageAppend: TickGap * i, multishotAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_fireRateAppend.push(calcDamage({ baseDamageAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalAppend_criticalRatioAppend.push(calcDamage({ criticalAppend: TickGap * i, criticalRatioAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalAppend_multishotAppend.push(calcDamage({ criticalAppend: TickGap * i, multishotAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalAppend_fireRateAppend.push(calcDamage({ criticalAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalRatioAppend_multishotAppend.push(calcDamage({ criticalRatioAppend: TickGap * i, multishotAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalRatioAppend_fireRateAppend.push(calcDamage({ criticalRatioAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                multishotAppend_fireRateAppend.push(calcDamage({ multishotAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+
+            let chartsInstance = echarts.init($canvas2);
+            let option = {
+                title: {
+                    text: '双加成',
+                },
+                legend: {
+                    data: [
+                        { name: "基伤_暴击" },
+                        { name: "基伤_爆伤" },
+                        { name: "基伤_多重" },
+                        { name: "基伤_射速" },
+                        { name: "暴击_爆伤" },
+                        { name: "暴击_多重" },
+                        { name: "暴击_射速" },
+                        { name: "爆伤_多重" },
+                        { name: "爆伤_射速" },
+                        { name: "多重_射速" },
+                    ],
+                },
+                tooltip: {
+                    show: true, // 提示框展示开关，一个跟随鼠标展示数据详细信息的框
+                },
+                xAxis: {
+                    data: xAxisData,
+                    name: '加成率',
+                    nameLocation: 'end',
+                    axisPointer: {
+                        show: true, // 坐标轴指示器，跟随鼠标移动的分割线
+                        type: "shadow", // 指示器类型，line,shadow
+                    },
+                },
+                yAxis: {
+                    type: "value",
+                    name: '期望伤害',
+                    nameLocation: 'end',
+                    axisPointer: {
+                        show: true, // 坐标轴指示器，跟随鼠标移动的分割线
+                        type: "line", // 指示器类型，line,shadow
+                    },
+                },
+                series: [
+                    {
+                        name: "基伤_暴击", // 配合legend
+                        data: baseDamageAppend_criticalAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_爆伤", // 配合legend
+                        data: baseDamageAppend_criticalRatioAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_多重", // 配合legend
+                        data: baseDamageAppend_multishotAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_射速", // 配合legend
+                        data: baseDamageAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击_爆伤", // 配合legend
+                        data: criticalAppend_criticalRatioAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击_多重", // 配合legend
+                        data: criticalAppend_multishotAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击_射速", // 配合legend
+                        data: criticalAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "爆伤_多重", // 配合legend
+                        data: criticalRatioAppend_multishotAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "爆伤_射速", // 配合legend
+                        data: criticalRatioAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "多重_射速", // 配合legend
+                        data: multishotAppend_fireRateAppend,
+                        type: "line",
+                    },
+                ],
+            };
+            chartsInstance.setOption(option);
+        }
+
+
+        function drawCanvas3() {
+
+            let xAxisData = [];
+            for (let i = 0; i <= Ticks; i++) {
+                xAxisData.push(`${TickGap * i}%`);
+            }
+
+            let baseDamageAppend_criticalAppend_criticalRatioAppend = [];
+            let baseDamageAppend_criticalAppend_multishotAppend = [];
+            let baseDamageAppend_criticalAppend_fireRateAppend = [];
+            let baseDamageAppend_criticalRatioAppend_multishotAppend = [];
+            let baseDamageAppend_criticalRatioAppend_fireRateAppend = [];
+            let baseDamageAppend_multishotAppend_fireRateAppend = [];
+            let criticalAppend_criticalRatioAppend_multishotAppend = [];
+            let criticalAppend_criticalRatioAppend_fireRateAppend = [];
+            let criticalAppend_multishotAppend_fireRateAppend = [];
+            let criticalRatioAppend_multishotAppend_fireRateAppend = [];
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_criticalAppend_criticalRatioAppend.push(calcDamage({ baseDamageAppend: TickGap * i, criticalAppend: TickGap * i, criticalRatioAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_criticalAppend_multishotAppend.push(calcDamage({ baseDamageAppend: TickGap * i, criticalAppend: TickGap * i, multishotAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_criticalAppend_fireRateAppend.push(calcDamage({ baseDamageAppend: TickGap * i, criticalAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_criticalRatioAppend_multishotAppend.push(calcDamage({ baseDamageAppend: TickGap * i, criticalRatioAppend: TickGap * i, multishotAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_criticalRatioAppend_fireRateAppend.push(calcDamage({ baseDamageAppend: TickGap * i, criticalRatioAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                baseDamageAppend_multishotAppend_fireRateAppend.push(calcDamage({ baseDamageAppend: TickGap * i, multishotAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalAppend_criticalRatioAppend_multishotAppend.push(calcDamage({ criticalAppend: TickGap * i, criticalRatioAppend: TickGap * i, multishotAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalAppend_criticalRatioAppend_fireRateAppend.push(calcDamage({ criticalAppend: TickGap * i, criticalRatioAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalAppend_multishotAppend_fireRateAppend.push(calcDamage({ criticalAppend: TickGap * i, multishotAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+            for (let i = 0; i <= Ticks; i++) {
+                criticalRatioAppend_multishotAppend_fireRateAppend.push(calcDamage({ criticalRatioAppend: TickGap * i, multishotAppend: TickGap * i, fireRateAppend: TickGap * i }));
+            }
+
+            let chartsInstance = echarts.init($canvas3);
+            let option = {
+                title: {
+                    text: '三加成',
+                },
+                legend: {
+                    data: [
+                        { name: "基伤_暴击_爆伤" },
+                        { name: "基伤_暴击_多重" },
+                        { name: "基伤_暴击_射速" },
+                        { name: "基伤_爆伤_多重" },
+                        { name: "基伤_爆伤_射速" },
+                        { name: "基伤_多重_射速" },
+                        { name: "暴击_爆伤_多重" },
+                        { name: "暴击_爆伤_射速" },
+                        { name: "暴击_多重_射速" },
+                        { name: "爆伤_多重_射速" },
+                    ],
+                },
+                tooltip: {
+                    show: true, // 提示框展示开关，一个跟随鼠标展示数据详细信息的框
+                },
+                xAxis: {
+                    data: xAxisData,
+                    name: '加成率',
+                    nameLocation: 'end',
+                    axisPointer: {
+                        show: true, // 坐标轴指示器，跟随鼠标移动的分割线
+                        type: "shadow", // 指示器类型，line,shadow
+                    },
+                },
+                yAxis: {
+                    type: "value",
+                    name: '期望伤害',
+                    nameLocation: 'end',
+                    axisPointer: {
+                        show: true, // 坐标轴指示器，跟随鼠标移动的分割线
+                        type: "line", // 指示器类型，line,shadow
+                    },
+                },
+                series: [
+                    {
+                        name: "基伤_暴击_爆伤", // 配合legend
+                        data: baseDamageAppend_criticalAppend_criticalRatioAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_暴击_多重", // 配合legend
+                        data: baseDamageAppend_criticalAppend_multishotAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_暴击_射速", // 配合legend
+                        data: baseDamageAppend_criticalAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_爆伤_多重", // 配合legend
+                        data: baseDamageAppend_criticalRatioAppend_multishotAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_爆伤_射速", // 配合legend
+                        data: baseDamageAppend_criticalRatioAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "基伤_多重_射速", // 配合legend
+                        data: baseDamageAppend_multishotAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击_爆伤_多重", // 配合legend
+                        data: criticalAppend_criticalRatioAppend_multishotAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击_爆伤_射速", // 配合legend
+                        data: criticalAppend_criticalRatioAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "暴击_多重_射速", // 配合legend
+                        data: criticalAppend_multishotAppend_fireRateAppend,
+                        type: "line",
+                    },
+                    {
+                        name: "爆伤_多重_射速", // 配合legend
+                        data: criticalRatioAppend_multishotAppend_fireRateAppend,
+                        type: "line",
+                    },
+                ],
+            };
+            chartsInstance.setOption(option);
+        }
+
+        function refresh() {
+            drawCanvas1();
+            drawCanvas2();
+            drawCanvas3();
+        }
+        refresh();
+
+        $baseDamage.oninput = refresh;
+        $critical.oninput = refresh;
+        $criticalRatio.oninput = refresh;
+        $multishot.oninput = refresh;
+        $fireRate.oninput = refresh;
+    </script>
+</body>
+
+</html>
