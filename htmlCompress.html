@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML/JS兼容性转换与压缩工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/babel-standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/javascript-obfuscator/dist/index.browser.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            color: #2c3e50;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .card-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: #3498db;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-copy {
+            background: #2ecc71;
+        }
+
+        .btn-copy:hover {
+            background: #27ae60;
+        }
+
+        .btn-convert {
+            background: #e74c3c;
+            font-size: 1rem;
+            padding: 12px 24px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .btn-convert:hover {
+            background: #c0392b;
+        }
+
+        textarea,
+        pre {
+            width: 100%;
+            height: 300px;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+
+        pre {
+            overflow: auto;
+            position: relative;
+            white-space: pre-wrap;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            color: #7f8c8d;
+            font-size: 0.85rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        footer {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px 0;
+            margin-top: 30px;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            .card-container {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>HTML/JS兼容性转换与压缩工具</h1>
+            <p class="subtitle">将现代HTML/JS代码转换为兼容性更高的版本并进行压缩丑化</p>
+        </header>
+
+        <div class="options">
+            <div class="option-item">
+                <input type="checkbox" id="minify-html" checked>
+                <label for="minify-html">压缩HTML</label>
+            </div>
+            <div class="option-item">
+                <input type="checkbox" id="minify-css" checked>
+                <label for="minify-css">压缩CSS</label>
+            </div>
+            <div class="option-item">
+                <input type="checkbox" id="minify-js" checked>
+                <label for="minify-js">压缩JS</label>
+            </div>
+            <div class="option-item">
+                <input type="checkbox" id="obfuscate-js">
+                <label for="obfuscate-js">丑化JS</label>
+            </div>
+        </div>
+
+        <div class="card-container">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">原始代码</h2>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span>字符数: <span id="input-chars">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <textarea id="input-code" placeholder="在此输入您的HTML/JS代码（需要script标签包裹）..."></textarea>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">转换结果</h2>
+                    <div>
+                        <button class="btn btn-copy" id="copy-btn">
+                            复制
+                        </button>
+                    </div>
+                </div>
+                <pre id="output-code"></pre>
+                <div class="stats">
+                    <div class="stat-item">
+
+                        <span>字符数: <span id="output-chars">0</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <span>压缩率: <span id="compression-rate">0%</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-convert" id="convert-btn">
+            转换并压缩代码
+        </button>
+
+        <footer>
+            <p>HTML/JS兼容性转换与压缩工具 &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const inputCode = document.getElementById('input-code');
+        const outputCode = document.getElementById('output-code');
+        const convertBtn = document.getElementById('convert-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const inputChars = document.getElementById('input-chars');
+        const outputChars = document.getElementById('output-chars');
+        const compressionRate = document.getElementById('compression-rate');
+
+        // 更新字符统计
+        function updateCharCount() {
+            const inputText = inputCode.value;
+            inputChars.textContent = inputText.length;
+        }
+
+        // 初始更新字符统计
+        updateCharCount();
+        inputCode.addEventListener('input', updateCharCount);
+
+        // 压缩CSS
+        function minifyCSS(css) {
+            return css
+                .replace(/\/\*[\s\S]*?\*\//g, '') // 移除注释
+                .replace(/\s+/g, ' ') // 压缩空格
+                .replace(/;\s*/g, ';') // 移除分号后的空格
+                .replace(/:\s+/g, ':') // 移除冒号后的空格
+                .replace(/\s*{\s*/g, '{') // 压缩大括号周围的空格
+                .replace(/\s*}\s*/g, '}') // 压缩大括号周围的空格
+                .replace(/,\s+/g, ',') // 压缩逗号后的空格
+                .trim();
+        }
+
+        // 压缩HTML
+        function minifyHTML(html) {
+            return html
+                .replace(/<!--[\s\S]*?-->/g, '') // 移除注释
+                .replace(/>\s+</g, '><') // 移除标签间空白
+                        .replace(/\s{2,}/g, ' ') // 压缩多个空白为一个
+                        .replace(/\s+}/g, '}') // 移除CSS前的空白
+                        .replace(/{\s+/g, '{') // 移除CSS后的空白
+                        .trim(); // 移除首尾空白
+        }
+
+        // 压缩Jascript
+        function minifyJS(js) {
+            return js
+                .replace(/\/\*[\s\S]*?\*\//g, '') // 移除注释
+                .replace(/\s+/g, ' ') // 压缩空格
+                .replace(/;\s*/g, ';') // 移除分号后的空格
+                .replace(/,\s+/g, ',') // 移除逗号后的空格
+        }
+
+        // 转换函数
+        function convertCode() {
+            const input = inputCode.value;
+            const minifyHtml = document.getElementById('minify-html').checked;
+            const minifyJs = document.getElementById('minify-js').checked;
+            const obfuscateJs = document.getElementById('obfuscate-js').checked;
+            const minifyCss = document.getElementById('minify-css').checked;
+
+            try {
+                let processed = input;
+
+                // 处理CSS
+                if (minifyCss) {
+                    processed = processed.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (match, cssContent) => {
+                        return match.replace(cssContent, minifyCSS(cssContent));
+                    });
+                }
+
+                // 处理JavaScript
+                processed = processed.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (match, scriptContent) => {
+                    try {
+                        // Babel转换
+                        let transformedScript = Babel.transform(scriptContent, {
+                            presets: ['es2015'],
+                            comments: false,
+                            compact: minifyJs
+                        }).code;
+
+                        // 压缩JS
+                        transformedScript = minifyJS(transformedScript);
+
+                        // 丑化JS
+                        if (obfuscateJs) {
+                            transformedScript = JavaScriptObfuscator.obfuscate(transformedScript, {
+                                compact: true,
+                                controlFlowFlattening: true,
+                                controlFlowFlatteningThreshold: 0.75,
+                                numbersToExpressions: true,
+                                simplify: true,
+                                stringArrayShuffle: true,
+                                splitStrings: true,
+                                stringArrayThreshold: 0.75,
+                                deadCodeInjection: true,
+                                deadCodeInjectionThreshold: 0.4
+                            }).getObfuscatedCode();
+                        }
+
+                        return match.replace(scriptContent, transformedScript);
+                    } catch (e) {
+                        console.error('转换脚本时出错:', e);
+                        return match;
+                    }
+                });
+
+                // 压缩HTML
+                if (minifyHtml) {
+                    processed = minifyHTML(processed);
+                }
+
+                // 更新输出
+                outputCode.textContent = processed;
+
+                // 更新统计信息
+                const inputLength = input.length;
+                const outputLength = processed.length;
+                const rate = Math.round((1 - outputLength / inputLength) * 100);
+
+                outputChars.textContent = outputLength;
+                compressionRate.textContent = `${rate}%`;
+            } catch (error) {
+                console.error('转换过程中出错:', error);
+                outputCode.textContent = '转换出错: ' + error.message;
+            }
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard() {
+            const text = outputCode.textContent;
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    copyBtn.innerHTML = '已复制';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '复制';
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    copyBtn.innerHTML = '失败';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '复制';
+                    }, 2000);
+                });
+        }
+
+        // 添加事件监听器
+        convertBtn.addEventListener('click', convertCode);
+        copyBtn.addEventListener('click', copyToClipboard);
+
+        // 初始转换
+        convertCode();
+    </script>
+</body>
+
+</html>
